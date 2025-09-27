@@ -3,8 +3,8 @@ from typing import TypedDict, Annotated
 from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.checkpoint.memory import MemorySaver
-
+from langgraph.checkpoint.sqlite import SqliteSaver
+import sqlite3 
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,9 +22,9 @@ def chat_node(state:ChatState):
 
     return {"messages": [response]}
 
+db=sqlite3.connect("graphMate.db", check_same_thread=False)
 
-
-check_pointer= MemorySaver()
+check_pointer=SqliteSaver(conn=db) 
 graph = StateGraph(ChatState)
 
 # add nodes
@@ -35,13 +35,15 @@ graph.add_edge('chat_node', END)
 
 chatbot = graph.compile(checkpointer=check_pointer) 
 
-# initial_state = {
-#     'messages': [HumanMessage(content='What is the capital of india')]
-# }
+def retreve_all_threads():
+    all_threads = set()
+    for checkpont in  check_pointer.list(None):
+        all_threads.add(checkpont.config['configurable']['thread_id'])
 
-# response=chatbot.invoke(initial_state)['messages'][-1].content
+        
+    return(list(all_threads))
 
-# print(response)
+
 
 # thead_id= '1'
 
